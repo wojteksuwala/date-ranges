@@ -38,6 +38,17 @@ namespace DateRangeLibrary
         }
 
         /// <summary>
+        /// Creates new date range between two dates
+        /// </summary>
+        /// <param name="from">start</param>
+        /// <param name="to">end</param>
+        /// <returns>new date range between two dates</returns>
+        public static DateRange Between(LocalDate from, LocalDate to)
+        {
+            return new DateRange(from, to);
+        }
+
+        /// <summary>
         /// Tells if two periods have any common parts
         /// </summary>
         /// <param name="theOther">other period</param>
@@ -83,6 +94,19 @@ namespace DateRangeLibrary
                 this.From > theOther.From ? this.From : theOther.From,
                 this.To > theOther.To ? theOther.To : this.To
                 );
+        }
+
+        /// <summary>
+        /// Returns list of periods that is result of taking common part of 
+        /// this period and list of other periods
+        /// </summary>
+        /// <param name="otherPeriods">other periods</param>
+        /// <returns>list of periods that is result of taking common part of 
+        /// this period and list of other periods
+        /// </returns>
+        public List<DateRange> Intersect(List<DateRange> otherPeriods)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -151,6 +175,46 @@ namespace DateRangeLibrary
         public bool Contains(DateRange theOther)
         {
             return this.Contains(theOther.From) && this.Contains(theOther.To);
+        }
+
+        /// <summary>
+        /// Tells if this period starts before given day
+        /// </summary>
+        /// <param name="day">day</param>
+        /// <returns>true if this period starts before given day</returns>
+        public bool StartsBefore(LocalDate day) 
+        {
+            return this.From.Before(day);
+        }
+
+        /// <summary>
+        /// Tells if this period starts before the other period
+        /// </summary>
+        /// <param name="theOther"></param>
+        /// <returns>true if this period starts before the other period</returns>
+        public bool StartsBefore(DateRange theOther)
+        {
+            return this.From.Before(theOther.From);
+        }
+
+        /// <summary>
+        /// Tells if this period ends before given day
+        /// </summary>
+        /// <param name="day">day</param>
+        /// <returns>true if this period ends before given day</returns>
+        public bool EndsBefore(LocalDate day)
+        {
+            return this.To.Before(day);
+        }
+
+        /// <summary>
+        /// Tells if this periods ends befor start of the other period
+        /// </summary>
+        /// <param name="theOther">other period</param>
+        /// <returns>true if this periods ends befor start of the other period</returns>
+        public bool EndsBefore(DateRange theOther)
+        {
+            return this.To.Before(theOther.From);
         }
 
         /// <summary>
@@ -228,6 +292,47 @@ namespace DateRangeLibrary
         public DateRange Copy()
         {
             return new DateRange(this.From, this.To);
+        }
+    }
+
+    /// <summary>
+    /// Extension methods over IEnumerable of DateRange
+    /// </summary>
+    public static class DateReangeListExtensions
+    {
+        /// <summary>
+        /// Creates list of periods by mergin periods in original list.
+        /// </summary>
+        /// <param name="list">original list</param>
+        /// <returns>list of periods by mergin periods in original list</returns>
+        public static IEnumerable<DateRange> Merge(this IEnumerable<DateRange> list) 
+        {
+            var toProcess = new List<DateRange>(list);
+            var result = new List<DateRange>();
+            while (toProcess.Count >= 1) 
+            {
+                var candidateIsDistinct = true;
+                var candidate = toProcess[0];
+                for (int i = 1; i < toProcess.Count; i++)
+                {
+                    var p = toProcess[i];
+                    if (candidate.Overlaps(p) || candidate.Abuts(p))
+                    {
+                        var merge = candidate.Sum(p)[0];
+                        toProcess.Remove(p);
+                        toProcess.Remove(candidate);
+                        toProcess.Add(merge);
+                        candidateIsDistinct = false;
+                        break;
+                    }
+                }
+                if (candidateIsDistinct)
+                {
+                    toProcess.Remove(candidate);
+                    result.Add(candidate);
+                }
+            }
+            return result;
         }
     }
 
