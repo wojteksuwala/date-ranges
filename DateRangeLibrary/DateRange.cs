@@ -88,6 +88,9 @@ namespace DateRangeLibrary
         /// <returns>common part of two periods</returns>
         public DateRange Intersect(DateRange theOther)
         {
+            if (theOther.IsEmpty() || this.IsEmpty())
+                return DateRange.Empty;
+
             if (!this.Overlaps(theOther)) return DateRange.Empty;
 
             return new DateRange(
@@ -106,7 +109,15 @@ namespace DateRangeLibrary
         /// </returns>
         public List<DateRange> Intersect(List<DateRange> otherPeriods)
         {
-            throw new NotImplementedException();
+            var intersect = new List<DateRange>();
+
+            foreach (var period in otherPeriods) 
+            {
+                var partialIntersect = this.Intersect(period);
+                if (!partialIntersect.IsEmpty())
+                    intersect.Add(partialIntersect);
+            }
+            return intersect.Merge();
         }
 
         /// <summary>
@@ -148,13 +159,39 @@ namespace DateRangeLibrary
 
 
         /// <summary>
-        /// Returns part of this period not included in theOther
+        /// Returns result of comparison between two periods
         /// </summary>
-        /// <param name="theOther">other period</param>
-        /// <returns>part of this period not included in theOther</returns>
-        public List<DateRange> Diff(DateRange theOther)
+        /// <param name="first">other period</param>
+        /// <param name="second">second period</param>
+        /// <returns>result of comparison between two periods</returns>
+        public static DateRangeDiff Diff(DateRange first,DateRange second)
         {
-            throw new NotImplementedException();
+            var commonParts = new List<DateRange>();
+            var intersection = first.Intersect(second);
+            if (!intersection.IsEmpty())
+                commonParts.Add(intersection);
+
+            return new DateRangeDiff(commonParts, first.Remove(intersection), second.Remove(first));
+        }
+
+        /// <summary>
+        /// Returns only part of this period that is not included in the Other
+        /// </summary>
+        /// <param name="theOther">period to remove</param>
+        /// <returns>only part of this period that is not included in the Other</returns>
+        public List<DateRange> Remove(DateRange theOther) 
+        {
+            var intersection = this.Intersect(theOther);
+
+            if (intersection.IsEmpty()) return new List<DateRange> { this.Copy() };
+
+            var p1 = DateRange.Between(this.From, intersection.From.PlusDays(-1));
+            var p2 = DateRange.Between(intersection.To.PlusDays(1), this.To);
+
+            var leftovers = new List<DateRange>();
+            if (!p1.IsEmpty()) leftovers.Add(p1);
+            if (!p2.IsEmpty()) leftovers.Add(p2);
+            return leftovers;
         }
 
         /// <summary>
@@ -296,6 +333,36 @@ namespace DateRangeLibrary
     }
 
     /// <summary>
+    /// Class represents result of comparison of two periods.
+    /// </summary>
+    public class DateRangeDiff
+    {
+        /// <summary>
+        /// Parts present in both periods
+        /// </summary>
+        public List<DateRange> CommonParts { get; protected set; }
+        /// <summary>
+        /// Parts present only in first period 
+        /// </summary>
+        public List<DateRange> OnlyInFirstPeriod { get; protected set; }
+        /// <summary>
+        /// Parts present in second period
+        /// </summary>
+        public List<DateRange> OnlyInSecondPeriod { get; protected set; }
+
+        public DateRangeDiff(
+            List<DateRange> commonParts,
+            List<DateRange> onlyInFirstPeriod,
+            List<DateRange> onlyInSecondPeriod
+            )
+        {
+            this.CommonParts = commonParts;
+            this.OnlyInFirstPeriod = onlyInFirstPeriod;
+            this.OnlyInSecondPeriod = onlyInSecondPeriod;
+        }
+    }
+
+    /// <summary>
     /// Extension methods over IEnumerable of DateRange
     /// </summary>
     public static class DateReangeListExtensions
@@ -305,9 +372,9 @@ namespace DateRangeLibrary
         /// </summary>
         /// <param name="list">original list</param>
         /// <returns>list of periods by mergin periods in original list</returns>
-        public static IEnumerable<DateRange> Merge(this IEnumerable<DateRange> list) 
+        public static List<DateRange> Merge(this List<DateRange> list) 
         {
-            var toProcess = new List<DateRange>(list);
+            var toProcess = list.Where(l=>!l.IsEmpty()).ToList();
             var result = new List<DateRange>();
             while (toProcess.Count >= 1) 
             {

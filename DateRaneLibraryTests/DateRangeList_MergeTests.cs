@@ -89,5 +89,19 @@ namespace DateRaneLibraryTests
             Assert.AreEqual(DateRange.Between(new LocalDate(1999, 12, 1), new LocalDate(2000, 1, 15)), result.First());
         
         }
+
+        [TestMethod]
+        public void Merge_EliminatesEmptyPeriodsFromList()
+        {
+            var lst = new List<DateRange> {
+                DateRange.Between(new LocalDate(2013,12,1), new LocalDate(2000,1,10)),
+                DateRange.Between(new LocalDate(2014,1,1), new LocalDate(2000,1,10)),
+                DateRange.Between(new LocalDate(2015,1,3), new LocalDate(2000,1,15))
+            };
+
+            var result = lst.Merge();
+            Assert.AreEqual(0, result.Count());
+            
+        }
     }
 }

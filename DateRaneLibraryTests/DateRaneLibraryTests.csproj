@@ -63,6 +63,7 @@
     <Compile Include="DateRange_SumTests.cs" />
     <Compile Include="DateRange_IntersectTests.cs" />
     <Compile Include="DateRangeList_MergeTests.cs" />
+    <Compile Include="DateRange_DiffTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DateRangeLibrary\DateRangeLibrary.csproj">
