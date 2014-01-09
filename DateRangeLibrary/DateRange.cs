@@ -330,6 +330,40 @@ namespace DateRangeLibrary
         {
             return new DateRange(this.From, this.To);
         }
+
+
+        /// <summary>
+        /// Calculates lenth of period in months.
+        /// It does so by dividing period into parts for each month included
+        /// and then takes sum of numer of days in period included in month
+        /// divided by number of days in month
+        /// </summary>
+        /// <returns></returns>
+        public decimal LengthInMonths()
+        {
+            //simple case -> empty period
+            if (IsEmpty()) return 0;
+            //simple case -> start and end in the same month
+            //TODO: add very special case when whole month is covered
+            if (From.InTheSameMonth(To)) 
+                return decimal.Divide(To.Day - From.Day + 1, DateTime.DaysInMonth(From.Year,From.Month)).Round();
+
+            //in case period spans 2 or more months
+            decimal len = 0;
+            //calc part from start month here
+            len += DateRange.Between(From, From.EndOfMonth()).LengthInMonths();
+            //calc months between
+            var iterarorDate = From.PlusMonths(1);
+            while (!iterarorDate.InTheSameMonth(To))
+            {
+                len += 1;
+                iterarorDate = iterarorDate.PlusMonths(1);
+            }
+            //calc part from end month here
+            len += DateRange.Between(To.BeginningOfMonth(), To).LengthInMonths().Round();
+
+            return len;
+        }
     }
 
     /// <summary>
@@ -401,6 +435,7 @@ namespace DateRangeLibrary
             }
             return result;
         }
+
     }
 
     public static class LocalDateExtensions
@@ -428,12 +463,35 @@ namespace DateRangeLibrary
 
         public static int DaysToEndOfMonth(this LocalDate thisDate)
         {
-            throw new NotImplementedException();
+            var numberOfDaysInMonth = DateTime.DaysInMonth(thisDate.Year, thisDate.Month);
+            return numberOfDaysInMonth - thisDate.Day;
         }
 
         public static int DaysFromBeginningOfMonth(this LocalDate thisDate)
         {
-            throw new NotImplementedException();
+            return thisDate.Day;
+        }
+
+        public static bool InTheSameMonth(this LocalDate thisDate, LocalDate otherDate) 
+        {
+            return thisDate.Year == otherDate.Year && thisDate.Month == otherDate.Month;
+        }
+    }
+
+    /// <summary>
+    /// Extension methods to simplify numerics code
+    /// </summary>
+    public static class NumericExtensions
+    {
+        /// <summary>
+        /// Rounds decimal to specified number of places
+        /// </summary>
+        /// <param name="thisNumber">number to round</param>
+        /// <param name="decimals">number of places (default value is 6)</param>
+        /// <returns>rounded decimal</returns>
+        public static decimal Round(this decimal thisNumber,int decimals = 6)
+        {
+            return Decimal.Round(thisNumber, decimals);
         }
     }
 }
